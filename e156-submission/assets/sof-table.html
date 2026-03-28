@@ -1,0 +1,1480 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; connect-src 'self'; img-src 'self' data: blob:; font-src 'self';" />
+  <title>SoF Table Generator — GRADE Summary of Findings</title>
+  <style>
+    :root {
+      --bg:#f8fafc; --card:#fff; --text:#0f172a; --muted:#64748b; --accent:#0891b2;
+      --border:#e2e8f0; --shadow:0 1px 4px rgba(0,0,0,.06);
+      --high:#059669; --mod:#d97706; --low:#ea580c; --vlow:#dc2626;
+      --high-bg:#dcfce7; --mod-bg:#fef9c3; --low-bg:#ffedd5; --vlow-bg:#fef2f2;
+      --stripe:#f1f5f9; --danger:#ef4444; --danger-bg:#fef2f2;
+    }
+    [data-theme="dark"] {
+      --bg:#0c0a1a; --card:#1a1633; --text:#e2e8f0; --muted:#94a3b8; --accent:#22d3ee;
+      --border:#2d2b4a; --shadow:0 1px 4px rgba(0,0,0,.3);
+      --high:#34d399; --mod:#fbbf24; --low:#fb923c; --vlow:#f87171;
+      --high-bg:#052e16; --mod-bg:#422006; --low-bg:#431407; --vlow-bg:#450a0a;
+      --stripe:#1e1b3a; --danger:#f87171; --danger-bg:#450a0a;
+    }
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);line-height:1.6;font-size:15px}
+    .sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+    @media(prefers-reduced-motion:reduce){*,*::before,*::after{transition-duration:.01ms!important;animation-duration:.01ms!important}}
+
+    /* Header */
+    .hdr{background:var(--card);border-bottom:1px solid var(--border);padding:12px 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:var(--shadow)}
+    .hdr h1{font-size:1.2rem;font-weight:800;color:var(--accent)} .hdr-sub{font-size:.78rem;color:var(--muted);font-weight:400}
+    .hdr-btns{display:flex;gap:8px} .hdr-btns button{background:none;border:1px solid var(--border);color:var(--text);padding:5px 12px;border-radius:6px;cursor:pointer;font-size:.82rem}
+    .hdr-btns button:hover{background:var(--accent);color:#fff;border-color:var(--accent)} .hdr-btns button:focus{outline:2px solid var(--accent);outline-offset:2px}
+
+    /* Layout */
+    .wrap{max-width:1200px;margin:0 auto;padding:16px}
+    .card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:18px;box-shadow:var(--shadow);margin-bottom:16px}
+    .card-t{font-size:.95rem;font-weight:700;margin-bottom:10px;color:var(--accent)}
+
+    /* Forms */
+    label{display:block;font-size:.8rem;font-weight:600;margin-bottom:2px;color:var(--muted)}
+    input,select,textarea{width:100%;padding:6px 8px;border:1px solid var(--border);border-radius:5px;background:var(--bg);color:var(--text);font-size:.88rem}
+    input:focus,select:focus,textarea:focus{outline:2px solid var(--accent);outline-offset:1px}
+    textarea{resize:vertical;min-height:60px;font-family:inherit}
+    .row{display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap} .row>div{flex:1;min-width:120px} .grp{margin-bottom:10px}
+
+    /* Buttons */
+    .btn{background:var(--accent);color:#fff;border:none;padding:10px 20px;border-radius:8px;font-size:.92rem;font-weight:600;cursor:pointer}
+    .btn:hover{opacity:.9} .btn:focus{outline:2px solid var(--accent);outline-offset:2px}
+    .btn-sm{padding:5px 12px;font-size:.8rem} .btn-block{width:100%}
+    .btn-danger{background:var(--danger)} .btn-outline{background:none;border:2px solid var(--accent);color:var(--accent)}
+    .btn-outline:hover{background:var(--accent);color:#fff}
+
+    /* ARIA Tabs */
+    .tab-bar{display:flex;gap:0;border-bottom:2px solid var(--border);margin-bottom:16px}
+    .tab-bar [role="tab"]{background:none;border:none;padding:10px 20px;font-size:.9rem;font-weight:600;color:var(--muted);cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-2px;transition:color .2s,border-color .2s}
+    .tab-bar [role="tab"]:hover{color:var(--text)}
+    .tab-bar [role="tab"][aria-selected="true"]{color:var(--accent);border-bottom-color:var(--accent)}
+    .tab-bar [role="tab"]:focus{outline:2px solid var(--accent);outline-offset:-2px}
+    [role="tabpanel"]{display:none} [role="tabpanel"].active{display:block}
+
+    /* GRADE badges */
+    .grade-badge{display:inline-block;padding:4px 14px;border-radius:20px;font-weight:700;font-size:.85rem;letter-spacing:.3px}
+    .grade-HIGH{background:var(--high-bg);color:var(--high)} .grade-MODERATE{background:var(--mod-bg);color:var(--mod)}
+    .grade-LOW{background:var(--low-bg);color:var(--low)} .grade-VERY_LOW{background:var(--vlow-bg);color:var(--vlow)}
+
+    /* GRADE circles */
+    .grade-circles{display:inline-flex;gap:3px;vertical-align:middle}
+    .grade-circles .circle{width:14px;height:14px;border-radius:50%;border:2px solid var(--muted);display:inline-block}
+    .grade-circles .circle.filled{background:var(--accent);border-color:var(--accent)}
+
+    /* Importance badges */
+    .imp-critical{background:#fef2f2;color:#dc2626;padding:2px 8px;border-radius:4px;font-size:.75rem;font-weight:600}
+    .imp-important{background:#fef9c3;color:#d97706;padding:2px 8px;border-radius:4px;font-size:.75rem;font-weight:600}
+    .imp-not-important{background:var(--bg);color:var(--muted);padding:2px 8px;border-radius:4px;font-size:.75rem;font-weight:600}
+    [data-theme="dark"] .imp-critical{background:#450a0a;color:#f87171}
+    [data-theme="dark"] .imp-important{background:#422006;color:#fbbf24}
+
+    /* SoF Table */
+    .sof{width:100%;border-collapse:collapse;font-size:.82rem;margin-top:12px}
+    .sof th,.sof td{padding:8px 10px;border:1px solid var(--border);text-align:left;vertical-align:top}
+    .sof th{background:var(--accent);color:#fff;font-weight:600;font-size:.78rem;text-transform:uppercase;letter-spacing:.3px}
+    .sof tr:nth-child(even) td{background:var(--stripe)}
+    .sof .num{text-align:right;font-family:'SF Mono',Consolas,monospace}
+    .sof .outcome-cell{font-weight:600}
+    .sof .pls{font-style:italic;color:var(--muted);font-size:.8rem}
+
+    /* Outcome list items */
+    .outcome-item{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:8px;position:relative}
+    .outcome-item .oi-name{font-weight:700;font-size:.9rem;margin-bottom:4px}
+    .outcome-item .oi-detail{font-size:.8rem;color:var(--muted)}
+    .outcome-item .oi-actions{position:absolute;top:8px;right:8px;display:flex;gap:4px}
+    .outcome-item .oi-actions button{background:none;border:1px solid var(--border);border-radius:4px;padding:2px 8px;cursor:pointer;font-size:.78rem;color:var(--text)}
+    .outcome-item .oi-actions button:hover{background:var(--accent);color:#fff;border-color:var(--accent)}
+    .outcome-item .oi-actions button.del:hover{background:var(--danger);border-color:var(--danger)}
+
+    /* Domain assessment rows */
+    .domain{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:8px}
+    .domain-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+    .domain-name{font-weight:600;font-size:.88rem} .domain-score{font-size:.82rem;font-weight:600}
+    .domain-score.not-serious{color:var(--high)} .domain-score.serious{color:var(--low)} .domain-score.very-serious{color:var(--vlow)}
+    .domain-detail{font-size:.8rem;color:var(--muted)}
+
+    /* Export area */
+    .export-area{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px;margin-top:12px;font-family:'SF Mono',Consolas,monospace;font-size:.78rem;white-space:pre-wrap;max-height:300px;overflow-y:auto;color:var(--text)}
+
+    /* Outcome selector in GRADE tab */
+    .outcome-sel{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
+    .outcome-sel button{padding:6px 14px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);cursor:pointer;font-size:.82rem}
+    .outcome-sel button:hover{border-color:var(--accent);color:var(--accent)}
+    .outcome-sel button.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+    .outcome-sel button:focus{outline:2px solid var(--accent);outline-offset:2px}
+
+    /* Notification toast */
+    .toast{position:fixed;bottom:20px;right:20px;background:var(--high);color:#fff;padding:10px 20px;border-radius:8px;font-size:.88rem;font-weight:600;z-index:300;opacity:0;transition:opacity .3s;pointer-events:none}
+    .toast.show{opacity:1}
+
+    /* Modal */
+    .modal-ov{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.5);z-index:200;display:flex;align-items:center;justify-content:center}
+    .modal-ov.hidden{display:none}
+    .modal{background:var(--card);border-radius:12px;max-width:700px;width:92%;max-height:85vh;overflow-y:auto;padding:24px;position:relative}
+    .modal h2{margin-bottom:10px} .modal h3{margin-top:12px;margin-bottom:4px;font-size:.9rem}
+    .modal-x{position:absolute;top:10px;right:14px;background:none;border:none;font-size:1.3rem;cursor:pointer;color:var(--text)}
+    .modal-x:focus{outline:2px solid var(--accent)}
+    .modal ul,.modal ol{font-size:.85rem;padding-left:20px;margin:6px 0}
+
+    /* Print */
+    @media print{
+      .hdr,.tab-bar,.hdr-btns,.btn,.oi-actions,.outcome-sel,#exportPanel{display:none!important}
+      body{background:#fff;color:#000;font-size:11pt}
+      .card{box-shadow:none;border:none;padding:0;margin:0}
+      .sof th{background:#333;color:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+      .sof tr:nth-child(even) td{background:#f0f0f0;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+      .grade-circles .circle.filled{background:#333;border-color:#333;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+    }
+
+    /* Responsive */
+    @media(max-width:768px){
+      .hdr{padding:10px 12px} .hdr h1{font-size:1rem} .wrap{padding:10px}
+      .tab-bar [role="tab"]{padding:8px 12px;font-size:.82rem}
+      .sof{font-size:.72rem} .sof th,.sof td{padding:4px 6px}
+    }
+  </style>
+</head>
+<body>
+<a href="#main" class="sr-only" style="position:absolute;left:-9999px" onfocus="this.style.cssText='position:fixed;top:0;left:0;z-index:9999;padding:8px 16px;background:var(--accent);color:#fff;font-size:1rem;text-decoration:none;border-radius:4px'" onblur="this.style.cssText='position:absolute;left:-9999px'">Skip to content</a>
+
+<header class="hdr">
+  <div><h1>SoF Table Generator <span class="hdr-sub">GRADE Summary of Findings</span></h1></div>
+  <div class="hdr-btns">
+    <button id="aboutBtn" type="button">About</button>
+    <button id="themeBtn" type="button">Dark Mode</button>
+  </div>
+</header>
+
+<main id="main" class="wrap">
+
+  <!-- Tab Bar -->
+  <div class="tab-bar" role="tablist" aria-label="SoF Table sections">
+    <button role="tab" id="tab-outcomes" aria-controls="panel-outcomes" aria-selected="true" tabindex="0">1. Outcomes</button>
+    <button role="tab" id="tab-grade" aria-controls="panel-grade" aria-selected="false" tabindex="-1">2. GRADE Assessment</button>
+    <button role="tab" id="tab-sof" aria-controls="panel-sof" aria-selected="false" tabindex="-1">3. SoF Table</button>
+    <button role="tab" id="tab-export" aria-controls="panel-export" aria-selected="false" tabindex="-1">4. Export</button>
+  </div>
+
+  <!-- ===== TAB 1: OUTCOMES ===== -->
+  <div role="tabpanel" id="panel-outcomes" aria-labelledby="tab-outcomes" class="active">
+    <div class="card">
+      <h2 class="card-t">Study Information</h2>
+      <div class="row">
+        <div style="flex:2"><label for="reviewTitle">Review Title</label>
+          <input type="text" id="reviewTitle" placeholder="e.g., Pharmacological treatment for heart failure" /></div>
+        <div><label for="studyDesign">Study Design</label>
+          <select id="studyDesign">
+            <option value="RCT">Randomized Controlled Trials</option>
+            <option value="OBS">Observational Studies</option>
+          </select></div>
+      </div>
+      <div class="row" style="align-items:flex-end">
+        <div style="flex:2"><label for="exampleSel">Load Example</label>
+          <select id="exampleSel">
+            <option value="">-- Blank --</option>
+            <option value="hf">Heart Failure Treatment (5 outcomes)</option>
+          </select></div>
+        <div><button type="button" class="btn" id="loadExampleBtn">Load</button></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2 class="card-t">Add Outcome</h2>
+      <div class="row">
+        <div style="flex:2"><label for="addName">Outcome Name</label>
+          <input type="text" id="addName" placeholder="e.g., All-cause mortality" /></div>
+        <div><label for="addTimeframe">Timeframe</label>
+          <input type="text" id="addTimeframe" placeholder="e.g., at 1 year" /></div>
+      </div>
+      <div class="row">
+        <div><label for="addK">Studies (k)</label>
+          <input type="number" id="addK" min="1" step="1" value="" placeholder="e.g., 5" /></div>
+        <div><label for="addN">Participants (N)</label>
+          <input type="number" id="addN" min="1" step="1" value="" placeholder="e.g., 12000" /></div>
+        <div><label for="addEffectType">Effect Type</label>
+          <select id="addEffectType">
+            <option value="RR">Risk Ratio (RR)</option>
+            <option value="OR">Odds Ratio (OR)</option>
+            <option value="HR">Hazard Ratio (HR)</option>
+            <option value="MD">Mean Difference (MD)</option>
+            <option value="SMD">Standardized Mean Difference (SMD)</option>
+          </select></div>
+      </div>
+      <div class="row">
+        <div><label for="addEstimate">Point Estimate</label>
+          <input type="number" id="addEstimate" step="0.01" placeholder="e.g., 0.85" /></div>
+        <div><label for="addCILow">95% CI Lower</label>
+          <input type="number" id="addCILow" step="0.01" placeholder="e.g., 0.72" /></div>
+        <div><label for="addCIHigh">95% CI Upper</label>
+          <input type="number" id="addCIHigh" step="0.01" placeholder="e.g., 1.02" /></div>
+      </div>
+      <div class="row">
+        <div><label for="addControlRisk">Control Group Risk (per 1000)</label>
+          <input type="number" id="addControlRisk" min="0" max="1000" step="1" placeholder="e.g., 200" /></div>
+        <div><label for="addImportance">Importance</label>
+          <select id="addImportance">
+            <option value="critical">Critical</option>
+            <option value="important">Important</option>
+            <option value="not-important">Not important</option>
+          </select></div>
+      </div>
+      <button type="button" class="btn btn-block" id="addOutcomeBtn" style="margin-top:8px">Add Outcome</button>
+    </div>
+
+    <div class="card">
+      <h2 class="card-t">Outcomes (<span id="outcomeCount">0</span>)</h2>
+      <div id="outcomeList" aria-live="polite"></div>
+      <p id="noOutcomes" style="color:var(--muted);font-size:.85rem;text-align:center;padding:20px">No outcomes added yet. Add an outcome above or load an example.</p>
+    </div>
+  </div>
+
+  <!-- ===== TAB 2: GRADE ASSESSMENT ===== -->
+  <div role="tabpanel" id="panel-grade" aria-labelledby="tab-grade">
+    <div class="card" id="gradeNoOutcomes" style="display:none">
+      <p style="color:var(--muted);text-align:center;padding:20px">Add outcomes in Tab 1 first before assessing GRADE domains.</p>
+    </div>
+    <div id="gradeContent">
+      <div class="card">
+        <h2 class="card-t">Select Outcome to Assess</h2>
+        <div class="outcome-sel" id="gradeOutcomeSel"></div>
+      </div>
+      <div id="gradeAssessmentArea"></div>
+    </div>
+  </div>
+
+  <!-- ===== TAB 3: SOF TABLE ===== -->
+  <div role="tabpanel" id="panel-sof" aria-labelledby="tab-sof">
+    <div class="card">
+      <h2 class="card-t" id="sofTableTitle">Summary of Findings Table</h2>
+      <p id="sofReviewTitle" style="font-size:.85rem;color:var(--muted);margin-bottom:12px"></p>
+      <div style="overflow-x:auto">
+        <table class="sof" id="sofMainTable">
+          <thead>
+            <tr>
+              <th>Outcome</th>
+              <th>Timeframe</th>
+              <th>Results and measurements</th>
+              <th style="text-align:center">Participants<br>(studies)</th>
+              <th style="text-align:center">Certainty</th>
+              <th>What happens</th>
+            </tr>
+          </thead>
+          <tbody id="sofMainBody"></tbody>
+        </table>
+      </div>
+      <div id="sofFootnotes" style="margin-top:12px;font-size:.78rem;color:var(--muted)"></div>
+      <p id="sofEmpty" style="color:var(--muted);text-align:center;padding:20px;display:none">Add outcomes and complete GRADE assessments to generate the SoF table.</p>
+    </div>
+  </div>
+
+  <!-- ===== TAB 4: EXPORT ===== -->
+  <div role="tabpanel" id="panel-export" aria-labelledby="tab-export">
+    <div class="card" id="exportPanel">
+      <h2 class="card-t">Export Options</h2>
+      <div class="row" style="margin-bottom:12px">
+        <div><button type="button" class="btn btn-block btn-outline" id="copyHtmlBtn">Copy HTML (for Word/Docs)</button></div>
+        <div><button type="button" class="btn btn-block btn-outline" id="exportCsvBtn">Export CSV</button></div>
+        <div><button type="button" class="btn btn-block btn-outline" id="exportJsonBtn">Export JSON</button></div>
+      </div>
+      <div class="row" style="margin-bottom:12px">
+        <div><button type="button" class="btn btn-block btn-outline" id="printBtn">Print-Ready Version</button></div>
+        <div><button type="button" class="btn btn-block btn-outline" id="exportMaifBtn">Export MAIF</button></div>
+      </div>
+    </div>
+    <div class="card">
+      <h2 class="card-t">Auto-Generated Footnotes</h2>
+      <div id="exportFootnotes" style="font-size:.85rem;color:var(--text)"></div>
+    </div>
+    <div class="card">
+      <h2 class="card-t">Preview</h2>
+      <div class="export-area" id="exportPreview">Select an export format above to preview.</div>
+    </div>
+  </div>
+
+</main>
+
+<!-- About Modal -->
+<div class="modal-ov hidden" id="aboutModal" role="dialog" aria-modal="true" aria-labelledby="aboutTitle">
+  <div class="modal">
+    <button class="modal-x" id="aboutX" aria-label="Close">&times;</button>
+    <h2 id="aboutTitle">SoF Table Generator v1.0.0</h2>
+    <p><strong>GRADE Summary of Findings Table Generator</strong></p>
+    <p>Generates GRADE-compliant Summary of Findings (SoF) tables as used in Cochrane systematic reviews. Each row represents one outcome with GRADE certainty assessment and absolute/relative effects.</p>
+
+    <h3>GRADE Framework</h3>
+    <p>The GRADE (Grading of Recommendations Assessment, Development and Evaluation) approach rates the certainty of evidence for each outcome across five domains:</p>
+    <ol>
+      <li><strong>Risk of Bias</strong>: Limitations in study design or execution</li>
+      <li><strong>Inconsistency</strong>: Unexplained heterogeneity across studies</li>
+      <li><strong>Indirectness</strong>: Differences between the evidence and the clinical question</li>
+      <li><strong>Imprecision</strong>: Wide confidence intervals or insufficient sample size</li>
+      <li><strong>Publication Bias</strong>: Selective reporting of studies</li>
+    </ol>
+    <p>For observational studies, certainty can be upgraded for: large effect, dose-response, or plausible confounding that would reduce the effect.</p>
+
+    <h3>Certainty Levels</h3>
+    <ul>
+      <li><strong>HIGH</strong> (4 circles): Very confident the true effect lies close to the estimate</li>
+      <li><strong>MODERATE</strong> (3 circles): Moderately confident; true effect is likely close</li>
+      <li><strong>LOW</strong> (2 circles): Limited confidence; true effect may be substantially different</li>
+      <li><strong>VERY LOW</strong> (1 circle): Very little confidence in the effect estimate</li>
+    </ul>
+
+    <h3>Author</h3>
+    <p>Mahmood Ahmad, Royal Free Hospital, London, UK</p>
+  </div>
+</div>
+
+<!-- Toast notification -->
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(function() {
+  'use strict';
+
+  /* ============================================================
+     UTILITY FUNCTIONS
+     ============================================================ */
+  function escapeHtml(str) {
+    if (str == null) return '';
+    return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+
+  function $(id) { return document.getElementById(id); }
+
+  function toast(msg) {
+    var t = $('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(function() { t.classList.remove('show'); }, 2200);
+  }
+
+  function uid() { return 'o' + Date.now().toString(36) + Math.random().toString(36).substr(2, 5); }
+
+  function roundN(v, n) {
+    if (v == null || isNaN(v)) return null;
+    var f = Math.pow(10, n);
+    return Math.round(v * f) / f;
+  }
+
+  /* ============================================================
+     DATA MODEL
+     ============================================================ */
+  var STORAGE_KEY = 'softable-data';
+
+  var appState = {
+    reviewTitle: '',
+    studyDesign: 'RCT',
+    outcomes: []
+    // Each outcome: { id, name, timeframe, k, n, effectType, estimate, ciLow, ciHigh,
+    //                  controlRisk, importance, grade: { rob, robRationale, inconsistency,
+    //                  inconsistencyRationale, i2, indirectness, indirectnessRationale,
+    //                  imprecision, imprecisionRationale, oisMet, pubBias, pubBiasRationale,
+    //                  largeEffect, doseResponse, plausibleConfounding, plainLanguage } }
+  };
+
+  function defaultGrade() {
+    return {
+      rob: 'not-serious', robRationale: '',
+      inconsistency: 'not-serious', inconsistencyRationale: '', i2: null,
+      indirectness: 'not-serious', indirectnessRationale: '',
+      imprecision: 'not-serious', imprecisionRationale: '', oisMet: false,
+      pubBias: 'not-detected', pubBiasRationale: '',
+      largeEffect: false, doseResponse: false, plausibleConfounding: false,
+      plainLanguage: ''
+    };
+  }
+
+  function saveState() {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(appState));
+    } catch(e) { /* quota exceeded */ }
+  }
+
+  function loadState() {
+    try {
+      var raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) {
+        var parsed = JSON.parse(raw);
+        if (parsed && Array.isArray(parsed.outcomes)) {
+          appState = parsed;
+          // Ensure all outcomes have grade
+          for (var i = 0; i < appState.outcomes.length; i++) {
+            if (!appState.outcomes[i].grade) {
+              appState.outcomes[i].grade = defaultGrade();
+            }
+          }
+        }
+      }
+    } catch(e) { /* corrupted */ }
+  }
+
+  /* ============================================================
+     GRADE CALCULATION
+     ============================================================ */
+  function calcGradeCertainty(outcome) {
+    var g = outcome.grade;
+    if (!g) return { level: 'HIGH', score: 4, downgrades: [], upgrades: [] };
+
+    // Start at 4 for RCT, 2 for OBS
+    var score = appState.studyDesign === 'RCT' ? 4 : 2;
+    var downgrades = [];
+    var upgrades = [];
+
+    // Downgrade domains
+    var domains = [
+      { key: 'rob', label: 'Risk of bias' },
+      { key: 'inconsistency', label: 'Inconsistency' },
+      { key: 'indirectness', label: 'Indirectness' },
+      { key: 'imprecision', label: 'Imprecision' }
+    ];
+    for (var i = 0; i < domains.length; i++) {
+      var val = g[domains[i].key];
+      if (val === 'serious') {
+        score -= 1;
+        downgrades.push({ domain: domains[i].label, amount: -1, rationale: g[domains[i].key + 'Rationale'] || '' });
+      } else if (val === 'very-serious') {
+        score -= 2;
+        downgrades.push({ domain: domains[i].label, amount: -2, rationale: g[domains[i].key + 'Rationale'] || '' });
+      }
+    }
+
+    // Publication bias
+    if (g.pubBias === 'strongly-suspected') {
+      score -= 1;
+      downgrades.push({ domain: 'Publication bias', amount: -1, rationale: g.pubBiasRationale || '' });
+    }
+
+    // Upgrade domains (observational only)
+    if (appState.studyDesign === 'OBS') {
+      if (g.largeEffect) {
+        score += 1;
+        upgrades.push({ domain: 'Large effect', amount: +1 });
+      }
+      if (g.doseResponse) {
+        score += 1;
+        upgrades.push({ domain: 'Dose-response', amount: +1 });
+      }
+      if (g.plausibleConfounding) {
+        score += 1;
+        upgrades.push({ domain: 'Plausible confounding', amount: +1 });
+      }
+    }
+
+    // Clamp 1-4
+    score = Math.max(1, Math.min(4, score));
+
+    var levels = { 4: 'HIGH', 3: 'MODERATE', 2: 'LOW', 1: 'VERY LOW' };
+    return { level: levels[score], score: score, downgrades: downgrades, upgrades: upgrades };
+  }
+
+  function gradeCirclesHtml(score) {
+    var html = '<span class="grade-circles" aria-label="GRADE certainty: ' + score + ' of 4">';
+    for (var i = 0; i < 4; i++) {
+      html += '<span class="circle' + (i < score ? ' filled' : '') + '"></span>';
+    }
+    html += '</span>';
+    return html;
+  }
+
+  function gradeBadgeHtml(level) {
+    var cls = level.replace(' ', '_');
+    return '<span class="grade-badge grade-' + escapeHtml(cls) + '">' + escapeHtml(level) + '</span>';
+  }
+
+  /* ============================================================
+     ABSOLUTE EFFECT CALCULATION
+     ============================================================ */
+  function calcAbsoluteEffect(outcome) {
+    var et = outcome.effectType;
+    var est = parseFloat(outcome.estimate);
+    var ciLo = parseFloat(outcome.ciLow);
+    var ciHi = parseFloat(outcome.ciHigh);
+    var cr = parseFloat(outcome.controlRisk); // per 1000
+
+    if (isNaN(est)) return null;
+
+    var result = {
+      relativeText: '',
+      absoluteText: '',
+      controlPer1000: null,
+      interventionPer1000: null,
+      diffPer1000: null,
+      diffCILow: null,
+      diffCIHigh: null
+    };
+
+    if (et === 'RR' || et === 'OR' || et === 'HR') {
+      var ciStr = '';
+      if (!isNaN(ciLo) && !isNaN(ciHi)) {
+        ciStr = ' (95% CI ' + roundN(ciLo, 2) + ' to ' + roundN(ciHi, 2) + ')';
+      }
+      result.relativeText = et + ' ' + roundN(est, 2) + ciStr;
+
+      if (!isNaN(cr) && cr > 0) {
+        result.controlPer1000 = roundN(cr, 0);
+
+        if (et === 'RR') {
+          result.interventionPer1000 = roundN(cr * est, 0);
+          result.diffPer1000 = roundN(cr * (est - 1), 0);
+          if (!isNaN(ciLo) && !isNaN(ciHi)) {
+            result.diffCILow = roundN(cr * (ciLo - 1), 0);
+            result.diffCIHigh = roundN(cr * (ciHi - 1), 0);
+          }
+        } else if (et === 'OR') {
+          // Convert OR to absolute using control risk
+          var p0 = cr / 1000;
+          var odds0 = p0 / (1 - p0);
+          var odds1 = odds0 * est;
+          var p1 = odds1 / (1 + odds1);
+          result.interventionPer1000 = roundN(p1 * 1000, 0);
+          result.diffPer1000 = roundN((p1 - p0) * 1000, 0);
+          if (!isNaN(ciLo) && !isNaN(ciHi)) {
+            var oddsLo = odds0 * ciLo;
+            var oddsHi = odds0 * ciHi;
+            var pLo = oddsLo / (1 + oddsLo);
+            var pHi = oddsHi / (1 + oddsHi);
+            result.diffCILow = roundN((pLo - p0) * 1000, 0);
+            result.diffCIHigh = roundN((pHi - p0) * 1000, 0);
+          }
+        } else if (et === 'HR') {
+          // Approximate using HR ~ RR for low event rates
+          result.interventionPer1000 = roundN(cr * est, 0);
+          result.diffPer1000 = roundN(cr * (est - 1), 0);
+          if (!isNaN(ciLo) && !isNaN(ciHi)) {
+            result.diffCILow = roundN(cr * (ciLo - 1), 0);
+            result.diffCIHigh = roundN(cr * (ciHi - 1), 0);
+          }
+        }
+
+        var absStr = result.diffPer1000 + ' per 1000';
+        if (result.diffCILow != null && result.diffCIHigh != null) {
+          absStr += ' (95% CI ' + result.diffCILow + ' to ' + result.diffCIHigh + ')';
+        }
+        result.absoluteText = absStr;
+      }
+    } else {
+      // MD or SMD
+      var unit = et === 'SMD' ? ' SD units' : '';
+      var ciPart = '';
+      if (!isNaN(ciLo) && !isNaN(ciHi)) {
+        ciPart = ' (95% CI ' + roundN(ciLo, 2) + ' to ' + roundN(ciHi, 2) + ')';
+      }
+      result.relativeText = et + ' ' + roundN(est, 2) + ciPart;
+      result.absoluteText = et + ' ' + roundN(est, 2) + unit + ciPart;
+    }
+
+    return result;
+  }
+
+  /* ============================================================
+     PLAIN LANGUAGE SUMMARY AUTO-GENERATION
+     ============================================================ */
+  function autoPlainLanguage(outcome) {
+    var g = calcGradeCertainty(outcome);
+    var et = outcome.effectType;
+    var est = parseFloat(outcome.estimate);
+    var ciLo = parseFloat(outcome.ciLow);
+    var ciHi = parseFloat(outcome.ciHigh);
+    var name = outcome.name || 'this outcome';
+
+    if (isNaN(est)) return 'Insufficient data to summarize.';
+
+    var certaintyPhrase = '';
+    if (g.level === 'HIGH') certaintyPhrase = 'The evidence suggests that';
+    else if (g.level === 'MODERATE') certaintyPhrase = 'The evidence likely';
+    else if (g.level === 'LOW') certaintyPhrase = 'The evidence may indicate that';
+    else certaintyPhrase = 'The evidence is very uncertain about';
+
+    if (et === 'RR' || et === 'OR' || et === 'HR') {
+      var crossesNull = (!isNaN(ciLo) && !isNaN(ciHi) && ciLo <= 1 && ciHi >= 1);
+      if (crossesNull) {
+        return certaintyPhrase + ' the intervention results in little to no difference in ' + name.toLowerCase() + '.';
+      } else if (est < 1) {
+        return certaintyPhrase + ' the intervention reduces ' + name.toLowerCase() + '.';
+      } else {
+        return certaintyPhrase + ' the intervention increases ' + name.toLowerCase() + '.';
+      }
+    } else {
+      // MD/SMD
+      var crossesZero = (!isNaN(ciLo) && !isNaN(ciHi) && ciLo <= 0 && ciHi >= 0);
+      if (crossesZero) {
+        return certaintyPhrase + ' the intervention results in little to no difference in ' + name.toLowerCase() + '.';
+      } else if (est < 0) {
+        return certaintyPhrase + ' the intervention reduces ' + name.toLowerCase() + '.';
+      } else {
+        return certaintyPhrase + ' the intervention increases ' + name.toLowerCase() + '.';
+      }
+    }
+  }
+
+  /* ============================================================
+     EXAMPLE DATA
+     ============================================================ */
+  var EXAMPLES = {
+    hf: {
+      reviewTitle: 'Pharmacological interventions for heart failure with reduced ejection fraction',
+      studyDesign: 'RCT',
+      outcomes: [
+        {
+          id: uid(), name: 'All-cause mortality', timeframe: 'at 1 year',
+          k: 8, n: 15200, effectType: 'RR', estimate: 0.83, ciLow: 0.75, ciHigh: 0.92,
+          controlRisk: 120, importance: 'critical',
+          grade: {
+            rob: 'not-serious', robRationale: 'All studies at low risk of bias',
+            inconsistency: 'not-serious', inconsistencyRationale: 'I-squared 18%, consistent direction', i2: 18,
+            indirectness: 'not-serious', indirectnessRationale: '',
+            imprecision: 'not-serious', imprecisionRationale: 'OIS met, CI does not cross null', oisMet: true,
+            pubBias: 'not-detected', pubBiasRationale: 'Funnel plot symmetric',
+            largeEffect: false, doseResponse: false, plausibleConfounding: false,
+            plainLanguage: ''
+          }
+        },
+        {
+          id: uid(), name: 'Heart failure hospitalization', timeframe: 'at 1 year',
+          k: 6, n: 12800, effectType: 'RR', estimate: 0.70, ciLow: 0.62, ciHigh: 0.80,
+          controlRisk: 250, importance: 'critical',
+          grade: {
+            rob: 'not-serious', robRationale: '',
+            inconsistency: 'not-serious', inconsistencyRationale: 'I-squared 22%', i2: 22,
+            indirectness: 'not-serious', indirectnessRationale: '',
+            imprecision: 'not-serious', imprecisionRationale: 'OIS met', oisMet: true,
+            pubBias: 'not-detected', pubBiasRationale: '',
+            largeEffect: false, doseResponse: false, plausibleConfounding: false,
+            plainLanguage: ''
+          }
+        },
+        {
+          id: uid(), name: 'Quality of life (KCCQ-12)', timeframe: 'at 6 months',
+          k: 4, n: 8500, effectType: 'MD', estimate: 4.8, ciLow: 2.1, ciHigh: 7.5,
+          controlRisk: 0, importance: 'important',
+          grade: {
+            rob: 'not-serious', robRationale: '',
+            inconsistency: 'serious', inconsistencyRationale: 'I-squared 62%, differing magnitudes', i2: 62,
+            indirectness: 'not-serious', indirectnessRationale: '',
+            imprecision: 'not-serious', imprecisionRationale: 'Exceeds MID of 5 points', oisMet: true,
+            pubBias: 'not-detected', pubBiasRationale: '',
+            largeEffect: false, doseResponse: false, plausibleConfounding: false,
+            plainLanguage: ''
+          }
+        },
+        {
+          id: uid(), name: 'Serious adverse events', timeframe: 'at 1 year',
+          k: 7, n: 14000, effectType: 'RR', estimate: 0.95, ciLow: 0.88, ciHigh: 1.03,
+          controlRisk: 180, importance: 'important',
+          grade: {
+            rob: 'not-serious', robRationale: '',
+            inconsistency: 'not-serious', inconsistencyRationale: 'I-squared 10%', i2: 10,
+            indirectness: 'not-serious', indirectnessRationale: '',
+            imprecision: 'serious', imprecisionRationale: 'CI crosses the null (1.0)', oisMet: false,
+            pubBias: 'not-detected', pubBiasRationale: '',
+            largeEffect: false, doseResponse: false, plausibleConfounding: false,
+            plainLanguage: ''
+          }
+        },
+        {
+          id: uid(), name: 'Withdrawal due to adverse effects', timeframe: 'at 1 year',
+          k: 5, n: 10500, effectType: 'RR', estimate: 1.12, ciLow: 0.90, ciHigh: 1.40,
+          controlRisk: 80, importance: 'not-important',
+          grade: {
+            rob: 'serious', robRationale: 'Two studies with high risk of attrition bias',
+            inconsistency: 'not-serious', inconsistencyRationale: 'I-squared 25%', i2: 25,
+            indirectness: 'not-serious', indirectnessRationale: '',
+            imprecision: 'serious', imprecisionRationale: 'Wide CI crosses null, OIS not met', oisMet: false,
+            pubBias: 'not-detected', pubBiasRationale: '',
+            largeEffect: false, doseResponse: false, plausibleConfounding: false,
+            plainLanguage: ''
+          }
+        }
+      ]
+    }
+  };
+
+  /* ============================================================
+     TAB MANAGEMENT (ARIA compliant)
+     ============================================================ */
+  var tabs = document.querySelectorAll('[role="tab"]');
+  var panels = document.querySelectorAll('[role="tabpanel"]');
+
+  function activateTab(tab) {
+    tabs.forEach(function(t) {
+      t.setAttribute('aria-selected', 'false');
+      t.setAttribute('tabindex', '-1');
+    });
+    panels.forEach(function(p) { p.classList.remove('active'); });
+
+    tab.setAttribute('aria-selected', 'true');
+    tab.setAttribute('tabindex', '0');
+    tab.focus();
+
+    var panelId = tab.getAttribute('aria-controls');
+    var panel = $(panelId);
+    if (panel) panel.classList.add('active');
+
+    // Refresh content when switching tabs
+    if (panelId === 'panel-grade') renderGradeTab();
+    if (panelId === 'panel-sof') renderSofTable();
+    if (panelId === 'panel-export') renderExportTab();
+  }
+
+  tabs.forEach(function(tab) {
+    tab.addEventListener('click', function() { activateTab(tab); });
+    tab.addEventListener('keydown', function(e) {
+      var idx = Array.prototype.indexOf.call(tabs, tab);
+      var next = -1;
+      if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+        next = (idx + 1) % tabs.length;
+      } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+        next = (idx - 1 + tabs.length) % tabs.length;
+      } else if (e.key === 'Home') {
+        next = 0;
+      } else if (e.key === 'End') {
+        next = tabs.length - 1;
+      }
+      if (next >= 0) {
+        e.preventDefault();
+        activateTab(tabs[next]);
+      }
+    });
+  });
+
+  /* ============================================================
+     THEME TOGGLE
+     ============================================================ */
+  var themeBtn = $('themeBtn');
+  function applyTheme(dark) {
+    document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+    themeBtn.textContent = dark ? 'Light Mode' : 'Dark Mode';
+    try { localStorage.setItem('softable-theme', dark ? 'dark' : 'light'); } catch(e) {}
+  }
+  themeBtn.addEventListener('click', function() {
+    var isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    applyTheme(!isDark);
+  });
+  // Init theme
+  (function() {
+    var saved = null;
+    try { saved = localStorage.getItem('softable-theme'); } catch(e) {}
+    if (saved === 'dark') applyTheme(true);
+    else if (saved === 'light') applyTheme(false);
+    else if (window.matchMedia && window.matchMedia('(prefers-color-scheme:dark)').matches) applyTheme(true);
+  })();
+
+  /* ============================================================
+     ABOUT MODAL
+     ============================================================ */
+  var aboutModal = $('aboutModal');
+  var aboutBtn = $('aboutBtn');
+  var aboutX = $('aboutX');
+  var aboutKeyHandler = null;
+
+  function openAbout() {
+    aboutModal.classList.remove('hidden');
+    aboutX.focus();
+    aboutKeyHandler = function(e) {
+      if (e.key === 'Escape') closeAbout();
+    };
+    document.addEventListener('keydown', aboutKeyHandler);
+  }
+  function closeAbout() {
+    aboutModal.classList.add('hidden');
+    if (aboutKeyHandler) {
+      document.removeEventListener('keydown', aboutKeyHandler);
+      aboutKeyHandler = null;
+    }
+    aboutBtn.focus();
+  }
+  aboutBtn.addEventListener('click', openAbout);
+  aboutX.addEventListener('click', closeAbout);
+  aboutModal.addEventListener('click', function(e) { if (e.target === aboutModal) closeAbout(); });
+
+  /* ============================================================
+     TAB 1: OUTCOMES MANAGEMENT
+     ============================================================ */
+  function renderOutcomeList() {
+    var list = $('outcomeList');
+    var noMsg = $('noOutcomes');
+    $('outcomeCount').textContent = appState.outcomes.length;
+
+    if (appState.outcomes.length === 0) {
+      list.innerHTML = '';
+      noMsg.style.display = 'block';
+      return;
+    }
+    noMsg.style.display = 'none';
+
+    var html = '';
+    for (var i = 0; i < appState.outcomes.length; i++) {
+      var o = appState.outcomes[i];
+      var impCls = 'imp-' + escapeHtml(o.importance);
+      var cert = calcGradeCertainty(o);
+      var effectStr = escapeHtml(o.effectType) + ' ' + escapeHtml(String(o.estimate));
+      if (o.ciLow != null && o.ciHigh != null) {
+        effectStr += ' [' + escapeHtml(String(o.ciLow)) + ', ' + escapeHtml(String(o.ciHigh)) + ']';
+      }
+      html += '<div class="outcome-item" data-id="' + escapeHtml(o.id) + '">';
+      html += '<div class="oi-actions">';
+      html += '<button type="button" class="edit-outcome-btn" data-id="' + escapeHtml(o.id) + '" aria-label="Edit ' + escapeHtml(o.name) + '">Edit</button>';
+      html += '<button type="button" class="del del-outcome-btn" data-id="' + escapeHtml(o.id) + '" aria-label="Delete ' + escapeHtml(o.name) + '">Delete</button>';
+      html += '</div>';
+      html += '<div class="oi-name">' + escapeHtml(o.name) + ' <span class="' + impCls + '">' + escapeHtml(o.importance) + '</span></div>';
+      html += '<div class="oi-detail">' + escapeHtml(o.timeframe) + ' | ' + effectStr + ' | k=' + escapeHtml(String(o.k)) + ', N=' + escapeHtml(String(o.n)) + '</div>';
+      html += '<div class="oi-detail">GRADE: ' + gradeCirclesHtml(cert.score) + ' ' + gradeBadgeHtml(cert.level) + '</div>';
+      html += '</div>';
+    }
+    list.innerHTML = html;
+
+    // Bind edit/delete
+    list.querySelectorAll('.edit-outcome-btn').forEach(function(btn) {
+      btn.addEventListener('click', function() { editOutcome(btn.getAttribute('data-id')); });
+    });
+    list.querySelectorAll('.del-outcome-btn').forEach(function(btn) {
+      btn.addEventListener('click', function() { deleteOutcome(btn.getAttribute('data-id')); });
+    });
+  }
+
+  function clearAddForm() {
+    $('addName').value = '';
+    $('addTimeframe').value = '';
+    $('addK').value = '';
+    $('addN').value = '';
+    $('addEffectType').value = 'RR';
+    $('addEstimate').value = '';
+    $('addCILow').value = '';
+    $('addCIHigh').value = '';
+    $('addControlRisk').value = '';
+    $('addImportance').value = 'critical';
+  }
+
+  var editingId = null;
+
+  $('addOutcomeBtn').addEventListener('click', function() {
+    var name = $('addName').value.trim();
+    if (!name) { toast('Please enter an outcome name.'); $('addName').focus(); return; }
+
+    var o = {
+      id: editingId || uid(),
+      name: name,
+      timeframe: $('addTimeframe').value.trim(),
+      k: parseInt($('addK').value) || null,
+      n: parseInt($('addN').value) || null,
+      effectType: $('addEffectType').value,
+      estimate: parseFloat($('addEstimate').value),
+      ciLow: parseFloat($('addCILow').value),
+      ciHigh: parseFloat($('addCIHigh').value),
+      controlRisk: parseFloat($('addControlRisk').value),
+      importance: $('addImportance').value,
+      grade: defaultGrade()
+    };
+
+    if (isNaN(o.estimate)) { toast('Please enter a point estimate.'); $('addEstimate').focus(); return; }
+
+    if (editingId) {
+      // Find existing and preserve grade
+      for (var i = 0; i < appState.outcomes.length; i++) {
+        if (appState.outcomes[i].id === editingId) {
+          o.grade = appState.outcomes[i].grade;
+          appState.outcomes[i] = o;
+          break;
+        }
+      }
+      editingId = null;
+      $('addOutcomeBtn').textContent = 'Add Outcome';
+      toast('Outcome updated.');
+    } else {
+      appState.outcomes.push(o);
+      toast('Outcome added.');
+    }
+
+    saveState();
+    clearAddForm();
+    renderOutcomeList();
+  });
+
+  function editOutcome(id) {
+    var o = appState.outcomes.find(function(x) { return x.id === id; });
+    if (!o) return;
+    editingId = id;
+    $('addName').value = o.name;
+    $('addTimeframe').value = o.timeframe || '';
+    $('addK').value = o.k || '';
+    $('addN').value = o.n || '';
+    $('addEffectType').value = o.effectType || 'RR';
+    $('addEstimate').value = isNaN(o.estimate) ? '' : o.estimate;
+    $('addCILow').value = isNaN(o.ciLow) ? '' : o.ciLow;
+    $('addCIHigh').value = isNaN(o.ciHigh) ? '' : o.ciHigh;
+    $('addControlRisk').value = isNaN(o.controlRisk) ? '' : o.controlRisk;
+    $('addImportance').value = o.importance || 'critical';
+    $('addOutcomeBtn').textContent = 'Update Outcome';
+    $('addName').focus();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function deleteOutcome(id) {
+    appState.outcomes = appState.outcomes.filter(function(x) { return x.id !== id; });
+    saveState();
+    renderOutcomeList();
+    toast('Outcome deleted.');
+  }
+
+  /* ============================================================
+     LOAD EXAMPLE
+     ============================================================ */
+  $('loadExampleBtn').addEventListener('click', function() {
+    var key = $('exampleSel').value;
+    if (!key || !EXAMPLES[key]) { toast('Select an example to load.'); return; }
+    var ex = EXAMPLES[key];
+    appState.reviewTitle = ex.reviewTitle;
+    appState.studyDesign = ex.studyDesign;
+    // Regenerate IDs for fresh load
+    appState.outcomes = ex.outcomes.map(function(o) {
+      var copy = JSON.parse(JSON.stringify(o));
+      copy.id = uid();
+      return copy;
+    });
+    $('reviewTitle').value = appState.reviewTitle;
+    $('studyDesign').value = appState.studyDesign;
+    saveState();
+    renderOutcomeList();
+    toast('Example loaded with ' + appState.outcomes.length + ' outcomes.');
+  });
+
+  // Save review title on change
+  $('reviewTitle').addEventListener('input', function() {
+    appState.reviewTitle = this.value.trim();
+    saveState();
+  });
+  $('studyDesign').addEventListener('change', function() {
+    appState.studyDesign = this.value;
+    saveState();
+    renderOutcomeList(); // re-render GRADE scores
+  });
+
+  /* ============================================================
+     TAB 2: GRADE ASSESSMENT
+     ============================================================ */
+  var selectedGradeIdx = 0;
+
+  function renderGradeTab() {
+    var sel = $('gradeOutcomeSel');
+    var area = $('gradeAssessmentArea');
+    var noCard = $('gradeNoOutcomes');
+
+    if (appState.outcomes.length === 0) {
+      noCard.style.display = 'block';
+      sel.parentElement.style.display = 'none';
+      area.innerHTML = '';
+      return;
+    }
+    noCard.style.display = 'none';
+    sel.parentElement.style.display = '';
+
+    // Clamp selectedGradeIdx
+    if (selectedGradeIdx >= appState.outcomes.length) selectedGradeIdx = 0;
+
+    // Render outcome selector buttons
+    var selHtml = '';
+    for (var i = 0; i < appState.outcomes.length; i++) {
+      var active = i === selectedGradeIdx ? ' active' : '';
+      selHtml += '<button type="button" class="grade-sel-btn' + active + '" data-idx="' + i + '">' +
+        escapeHtml(appState.outcomes[i].name) + '</button>';
+    }
+    sel.innerHTML = selHtml;
+    sel.querySelectorAll('.grade-sel-btn').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        selectedGradeIdx = parseInt(btn.getAttribute('data-idx'));
+        renderGradeTab();
+      });
+    });
+
+    // Render assessment form for selected outcome
+    var o = appState.outcomes[selectedGradeIdx];
+    var g = o.grade;
+    var cert = calcGradeCertainty(o);
+    var isObs = appState.studyDesign === 'OBS';
+
+    var html = '<div class="card">';
+    html += '<h2 class="card-t">GRADE Assessment: ' + escapeHtml(o.name) + '</h2>';
+    html += '<div style="margin-bottom:12px">Current certainty: ' + gradeCirclesHtml(cert.score) + ' ' + gradeBadgeHtml(cert.level) + '</div>';
+
+    // Domain 1: Risk of Bias
+    html += buildDomainSelect('rob', 'Risk of Bias', g.rob, g.robRationale,
+      [['not-serious', 'Not serious'], ['serious', 'Serious (-1)'], ['very-serious', 'Very serious (-2)']]);
+
+    // Domain 2: Inconsistency
+    html += '<div class="domain">';
+    html += '<div class="row"><div style="flex:2"><label for="grade-inconsistency">Inconsistency</label>';
+    html += '<select id="grade-inconsistency" data-field="inconsistency">';
+    html += buildOptions([['not-serious', 'Not serious'], ['serious', 'Serious (-1)'], ['very-serious', 'Very serious (-2)']], g.inconsistency);
+    html += '</select></div>';
+    html += '<div><label for="grade-i2">I-squared (%)</label>';
+    html += '<input type="number" id="grade-i2" data-field="i2" min="0" max="100" step="1" value="' + (g.i2 != null ? g.i2 : '') + '" placeholder="e.g., 45" /></div></div>';
+    html += '<label for="grade-inconsistencyRationale">Rationale</label>';
+    html += '<textarea id="grade-inconsistencyRationale" data-field="inconsistencyRationale" rows="2" placeholder="Explain assessment...">' + escapeHtml(g.inconsistencyRationale || '') + '</textarea>';
+    html += '</div>';
+
+    // Domain 3: Indirectness
+    html += buildDomainSelect('indirectness', 'Indirectness', g.indirectness, g.indirectnessRationale,
+      [['not-serious', 'Not serious'], ['serious', 'Serious (-1)'], ['very-serious', 'Very serious (-2)']]);
+
+    // Domain 4: Imprecision
+    html += '<div class="domain">';
+    html += '<div class="row"><div style="flex:2"><label for="grade-imprecision">Imprecision</label>';
+    html += '<select id="grade-imprecision" data-field="imprecision">';
+    html += buildOptions([['not-serious', 'Not serious'], ['serious', 'Serious (-1)'], ['very-serious', 'Very serious (-2)']], g.imprecision);
+    html += '</select></div>';
+    html += '<div><label for="grade-oisMet">OIS Met?</label>';
+    html += '<select id="grade-oisMet" data-field="oisMet">';
+    html += '<option value="false"' + (!g.oisMet ? ' selected' : '') + '>No</option>';
+    html += '<option value="true"' + (g.oisMet ? ' selected' : '') + '>Yes</option>';
+    html += '</select></div></div>';
+    html += '<label for="grade-imprecisionRationale">Rationale</label>';
+    html += '<textarea id="grade-imprecisionRationale" data-field="imprecisionRationale" rows="2" placeholder="Explain assessment...">' + escapeHtml(g.imprecisionRationale || '') + '</textarea>';
+    html += '</div>';
+
+    // Domain 5: Publication Bias
+    html += buildDomainSelect('pubBias', 'Publication Bias', g.pubBias, g.pubBiasRationale,
+      [['not-detected', 'Not detected'], ['strongly-suspected', 'Strongly suspected (-1)']]);
+
+    // Upgrading factors (observational only)
+    if (isObs) {
+      html += '<div class="card" style="margin-top:8px;border-color:var(--high)">';
+      html += '<h3 class="card-t" style="color:var(--high)">Upgrading Factors (Observational Studies)</h3>';
+      html += '<div class="row">';
+      html += '<div><label><input type="checkbox" id="grade-largeEffect" data-field="largeEffect"' + (g.largeEffect ? ' checked' : '') + ' /> Large effect (+1)</label></div>';
+      html += '<div><label><input type="checkbox" id="grade-doseResponse" data-field="doseResponse"' + (g.doseResponse ? ' checked' : '') + ' /> Dose-response (+1)</label></div>';
+      html += '<div><label><input type="checkbox" id="grade-plausibleConfounding" data-field="plausibleConfounding"' + (g.plausibleConfounding ? ' checked' : '') + ' /> Plausible confounding (+1)</label></div>';
+      html += '</div></div>';
+    }
+
+    // Plain language summary
+    html += '<div class="domain">';
+    html += '<label for="grade-plainLanguage">Plain Language Summary</label>';
+    var autoSummary = g.plainLanguage || autoPlainLanguage(o);
+    html += '<textarea id="grade-plainLanguage" data-field="plainLanguage" rows="2" placeholder="Auto-generated if left blank">' + escapeHtml(autoSummary) + '</textarea>';
+    html += '<button type="button" class="btn btn-sm" id="autoPlsBtn" style="margin-top:4px">Auto-generate</button>';
+    html += '</div>';
+
+    html += '</div>';
+    area.innerHTML = html;
+
+    // Bind change handlers
+    area.querySelectorAll('select[data-field], textarea[data-field], input[data-field]').forEach(function(el) {
+      var field = el.getAttribute('data-field');
+      var handler = function() {
+        var val;
+        if (el.type === 'checkbox') {
+          val = el.checked;
+        } else if (field === 'oisMet') {
+          val = el.value === 'true';
+        } else if (field === 'i2') {
+          val = el.value === '' ? null : parseFloat(el.value);
+        } else {
+          val = el.value;
+        }
+        appState.outcomes[selectedGradeIdx].grade[field] = val;
+        saveState();
+        // Update certainty display
+        var newCert = calcGradeCertainty(appState.outcomes[selectedGradeIdx]);
+        var certDiv = area.querySelector('div[style*="margin-bottom:12px"]');
+        if (certDiv) {
+          certDiv.innerHTML = 'Current certainty: ' + gradeCirclesHtml(newCert.score) + ' ' + gradeBadgeHtml(newCert.level);
+        }
+      };
+      el.addEventListener('change', handler);
+      if (el.tagName === 'TEXTAREA') el.addEventListener('input', handler);
+    });
+
+    // Auto-generate PLS button
+    var autoBtn = $('autoPlsBtn');
+    if (autoBtn) {
+      autoBtn.addEventListener('click', function() {
+        var pls = autoPlainLanguage(appState.outcomes[selectedGradeIdx]);
+        $('grade-plainLanguage').value = pls;
+        appState.outcomes[selectedGradeIdx].grade.plainLanguage = pls;
+        saveState();
+        toast('Plain language summary generated.');
+      });
+    }
+  }
+
+  function buildDomainSelect(key, label, current, rationale, options) {
+    var html = '<div class="domain">';
+    html += '<label for="grade-' + key + '">' + escapeHtml(label) + '</label>';
+    html += '<select id="grade-' + key + '" data-field="' + key + '">';
+    html += buildOptions(options, current);
+    html += '</select>';
+    html += '<label for="grade-' + key + 'Rationale" style="margin-top:6px">Rationale</label>';
+    html += '<textarea id="grade-' + key + 'Rationale" data-field="' + key + 'Rationale" rows="2" placeholder="Explain assessment...">' + escapeHtml(rationale || '') + '</textarea>';
+    html += '</div>';
+    return html;
+  }
+
+  function buildOptions(opts, selected) {
+    var html = '';
+    for (var i = 0; i < opts.length; i++) {
+      html += '<option value="' + escapeHtml(opts[i][0]) + '"' + (opts[i][0] === selected ? ' selected' : '') + '>' + escapeHtml(opts[i][1]) + '</option>';
+    }
+    return html;
+  }
+
+  /* ============================================================
+     TAB 3: SOF TABLE RENDERING
+     ============================================================ */
+  function renderSofTable() {
+    var tbody = $('sofMainBody');
+    var footnotes = $('sofFootnotes');
+    var emptyMsg = $('sofEmpty');
+    var titleEl = $('sofReviewTitle');
+
+    titleEl.textContent = appState.reviewTitle ? appState.reviewTitle : '';
+
+    if (appState.outcomes.length === 0) {
+      tbody.innerHTML = '';
+      footnotes.innerHTML = '';
+      emptyMsg.style.display = 'block';
+      return;
+    }
+    emptyMsg.style.display = 'none';
+
+    var footnotesArr = [];
+    var fnIdx = 0;
+
+    var html = '';
+    for (var i = 0; i < appState.outcomes.length; i++) {
+      var o = appState.outcomes[i];
+      var cert = calcGradeCertainty(o);
+      var absEffect = calcAbsoluteEffect(o);
+      var pls = o.grade.plainLanguage || autoPlainLanguage(o);
+
+      // Build footnote references for this outcome
+      var outcomeFn = [];
+      if (cert.downgrades.length > 0) {
+        for (var d = 0; d < cert.downgrades.length; d++) {
+          fnIdx++;
+          var fnText = cert.downgrades[d].domain + ': ' + (cert.downgrades[d].amount === -1 ? 'Downgraded one level' : 'Downgraded two levels');
+          if (cert.downgrades[d].rationale) fnText += ' - ' + cert.downgrades[d].rationale;
+          footnotesArr.push({ idx: fnIdx, text: fnText });
+          outcomeFn.push(fnIdx);
+        }
+      }
+      if (cert.upgrades.length > 0) {
+        for (var u = 0; u < cert.upgrades.length; u++) {
+          fnIdx++;
+          footnotesArr.push({ idx: fnIdx, text: cert.upgrades[u].domain + ': Upgraded one level' });
+          outcomeFn.push(fnIdx);
+        }
+      }
+
+      var fnSuperscript = '';
+      if (outcomeFn.length > 0) {
+        fnSuperscript = '<sup>' + outcomeFn.join(',') + '</sup>';
+      }
+
+      // Results column
+      var resultsHtml = '';
+      if (absEffect) {
+        resultsHtml = '<strong>Relative:</strong> ' + escapeHtml(absEffect.relativeText);
+        if (absEffect.absoluteText) {
+          resultsHtml += '<br><strong>Absolute:</strong> ' + escapeHtml(absEffect.absoluteText);
+        }
+      }
+
+      // Participants column
+      var partHtml = '';
+      if (o.n) partHtml = escapeHtml(String(o.n));
+      if (o.k) partHtml += '<br>(' + escapeHtml(String(o.k)) + ' ' + (o.k === 1 ? 'study' : 'studies') + ')';
+
+      html += '<tr>';
+      html += '<td class="outcome-cell">' + escapeHtml(o.name) + fnSuperscript + '</td>';
+      html += '<td>' + escapeHtml(o.timeframe || '') + '</td>';
+      html += '<td>' + resultsHtml + '</td>';
+      html += '<td style="text-align:center">' + partHtml + '</td>';
+      html += '<td style="text-align:center">' + gradeCirclesHtml(cert.score) + '<br><span style="font-size:.72rem">' + escapeHtml(cert.level) + '</span></td>';
+      html += '<td class="pls">' + escapeHtml(pls) + '</td>';
+      html += '</tr>';
+    }
+    tbody.innerHTML = html;
+
+    // Footnotes
+    if (footnotesArr.length > 0) {
+      var fnHtml = '<p style="font-weight:600;margin-bottom:4px">Footnotes:</p>';
+      for (var f = 0; f < footnotesArr.length; f++) {
+        fnHtml += '<p><sup>' + footnotesArr[f].idx + '</sup> ' + escapeHtml(footnotesArr[f].text) + '</p>';
+      }
+      footnotes.innerHTML = fnHtml;
+    } else {
+      footnotes.innerHTML = '';
+    }
+  }
+
+  /* ============================================================
+     TAB 4: EXPORT
+     ============================================================ */
+  function renderExportTab() {
+    renderExportFootnotes();
+    $('exportPreview').textContent = 'Select an export format above to preview.';
+  }
+
+  function renderExportFootnotes() {
+    var container = $('exportFootnotes');
+    if (appState.outcomes.length === 0) {
+      container.innerHTML = '<p style="color:var(--muted)">No outcomes to generate footnotes for.</p>';
+      return;
+    }
+
+    var html = '';
+    var fnIdx = 0;
+    for (var i = 0; i < appState.outcomes.length; i++) {
+      var o = appState.outcomes[i];
+      var cert = calcGradeCertainty(o);
+      if (cert.downgrades.length === 0 && cert.upgrades.length === 0) continue;
+
+      html += '<p style="font-weight:600;margin-top:8px">' + escapeHtml(o.name) + ':</p>';
+      for (var d = 0; d < cert.downgrades.length; d++) {
+        fnIdx++;
+        var txt = cert.downgrades[d].domain + ': ' + (cert.downgrades[d].amount === -1 ? 'Downgraded one level' : 'Downgraded two levels');
+        if (cert.downgrades[d].rationale) txt += '. ' + cert.downgrades[d].rationale;
+        html += '<p><sup>' + fnIdx + '</sup> ' + escapeHtml(txt) + '</p>';
+      }
+      for (var u = 0; u < cert.upgrades.length; u++) {
+        fnIdx++;
+        html += '<p><sup>' + fnIdx + '</sup> ' + escapeHtml(cert.upgrades[u].domain) + ': Upgraded one level</p>';
+      }
+    }
+
+    container.innerHTML = html || '<p style="color:var(--muted)">No downgrade or upgrade footnotes generated.</p>';
+  }
+
+  function generateSofHtml() {
+    // Generate standalone HTML table for pasting
+    var html = '<table style="border-collapse:collapse;width:100%;font-family:Arial,sans-serif;font-size:12px">';
+    html += '<thead><tr style="background:#0891b2;color:#fff">';
+    html += '<th style="padding:8px;border:1px solid #ccc;text-align:left">Outcome</th>';
+    html += '<th style="padding:8px;border:1px solid #ccc;text-align:left">Timeframe</th>';
+    html += '<th style="padding:8px;border:1px solid #ccc;text-align:left">Results and measurements</th>';
+    html += '<th style="padding:8px;border:1px solid #ccc;text-align:center">Participants (studies)</th>';
+    html += '<th style="padding:8px;border:1px solid #ccc;text-align:center">Certainty</th>';
+    html += '<th style="padding:8px;border:1px solid #ccc;text-align:left">What happens</th>';
+    html += '</tr></thead><tbody>';
+
+    for (var i = 0; i < appState.outcomes.length; i++) {
+      var o = appState.outcomes[i];
+      var cert = calcGradeCertainty(o);
+      var absEffect = calcAbsoluteEffect(o);
+      var pls = o.grade.plainLanguage || autoPlainLanguage(o);
+      var bgColor = i % 2 === 1 ? '#f1f5f9' : '#ffffff';
+
+      var resultsText = '';
+      if (absEffect) {
+        resultsText = 'Relative: ' + absEffect.relativeText;
+        if (absEffect.absoluteText) resultsText += '\nAbsolute: ' + absEffect.absoluteText;
+      }
+
+      // GRADE circles as text
+      var circleStr = '';
+      for (var c = 0; c < 4; c++) {
+        circleStr += c < cert.score ? '\u2B24' : '\u25CB';
+      }
+
+      html += '<tr style="background:' + bgColor + '">';
+      html += '<td style="padding:8px;border:1px solid #ccc;font-weight:bold">' + escapeHtml(o.name) + '</td>';
+      html += '<td style="padding:8px;border:1px solid #ccc">' + escapeHtml(o.timeframe || '') + '</td>';
+      html += '<td style="padding:8px;border:1px solid #ccc">' + escapeHtml(resultsText).replace(/\n/g, '<br>') + '</td>';
+      html += '<td style="padding:8px;border:1px solid #ccc;text-align:center">' + escapeHtml(String(o.n || '')) + '<br>(' + escapeHtml(String(o.k || '')) + ' ' + ((o.k === 1) ? 'study' : 'studies') + ')</td>';
+      html += '<td style="padding:8px;border:1px solid #ccc;text-align:center">' + circleStr + '<br>' + escapeHtml(cert.level) + '</td>';
+      html += '<td style="padding:8px;border:1px solid #ccc;font-style:italic">' + escapeHtml(pls) + '</td>';
+      html += '</tr>';
+    }
+    html += '</tbody></table>';
+    return html;
+  }
+
+  function generateCsv() {
+    var rows = [['Outcome', 'Timeframe', 'Effect Type', 'Estimate', 'CI Low', 'CI High',
+      'Control Risk per 1000', 'Absolute Difference per 1000', 'k', 'N',
+      'GRADE Level', 'GRADE Score', 'Importance', 'Plain Language Summary']];
+
+    for (var i = 0; i < appState.outcomes.length; i++) {
+      var o = appState.outcomes[i];
+      var cert = calcGradeCertainty(o);
+      var absEffect = calcAbsoluteEffect(o);
+      var pls = o.grade.plainLanguage || autoPlainLanguage(o);
+
+      rows.push([
+        o.name, o.timeframe || '', o.effectType, o.estimate, o.ciLow, o.ciHigh,
+        o.controlRisk || '', absEffect ? (absEffect.diffPer1000 || '') : '',
+        o.k || '', o.n || '', cert.level, cert.score, o.importance, pls
+      ]);
+    }
+
+    return rows.map(function(r) {
+      return r.map(function(cell) {
+        var s = String(cell == null ? '' : cell);
+        if (s.indexOf(',') >= 0 || s.indexOf('"') >= 0 || s.indexOf('\n') >= 0) {
+          return '"' + s.replace(/"/g, '""') + '"';
+        }
+        return s;
+      }).join(',');
+    }).join('\n');
+  }
+
+  function generateJson() {
+    var output = {
+      reviewTitle: appState.reviewTitle,
+      studyDesign: appState.studyDesign,
+      generatedDate: new Date().toISOString().split('T')[0],
+      outcomes: appState.outcomes.map(function(o) {
+        var cert = calcGradeCertainty(o);
+        var absEffect = calcAbsoluteEffect(o);
+        return {
+          name: o.name,
+          timeframe: o.timeframe,
+          k: o.k,
+          n: o.n,
+          effectType: o.effectType,
+          estimate: o.estimate,
+          ciLow: o.ciLow,
+          ciHigh: o.ciHigh,
+          controlRiskPer1000: o.controlRisk,
+          absoluteDiffPer1000: absEffect ? absEffect.diffPer1000 : null,
+          importance: o.importance,
+          gradeLevel: cert.level,
+          gradeScore: cert.score,
+          downgrades: cert.downgrades,
+          upgrades: cert.upgrades,
+          plainLanguage: o.grade.plainLanguage || autoPlainLanguage(o),
+          gradeAssessment: o.grade
+        };
+      })
+    };
+    return JSON.stringify(output, null, 2);
+  }
+
+  function generateMaif() {
+    var lines = [];
+    lines.push('# MAIF Results Section');
+    lines.push('## Review: ' + (appState.reviewTitle || 'Untitled'));
+    lines.push('');
+    lines.push('### Summary of Findings');
+    lines.push('');
+    lines.push('| Outcome | Effect | GRADE | Interpretation |');
+    lines.push('|---------|--------|-------|---------------|');
+
+    for (var i = 0; i < appState.outcomes.length; i++) {
+      var o = appState.outcomes[i];
+      var cert = calcGradeCertainty(o);
+      var absEffect = calcAbsoluteEffect(o);
+      var pls = o.grade.plainLanguage || autoPlainLanguage(o);
+      var effectStr = absEffect ? absEffect.relativeText : '';
+      lines.push('| ' + o.name + ' | ' + effectStr + ' | ' + cert.level + ' | ' + pls + ' |');
+    }
+
+    lines.push('');
+    lines.push('### Certainty of Evidence');
+    lines.push('');
+    for (var j = 0; j < appState.outcomes.length; j++) {
+      var oc = appState.outcomes[j];
+      var cr = calcGradeCertainty(oc);
+      lines.push('**' + oc.name + '** - ' + cr.level + ' certainty');
+      if (cr.downgrades.length > 0) {
+        lines.push('Downgraded for: ' + cr.downgrades.map(function(d) { return d.domain.toLowerCase(); }).join(', '));
+      }
+      lines.push('');
+    }
+
+    return lines.join('\n');
+  }
+
+  // Export button handlers
+  $('copyHtmlBtn').addEventListener('click', function() {
+    if (appState.outcomes.length === 0) { toast('No outcomes to export.'); return; }
+    var html = generateSofHtml();
+    $('exportPreview').textContent = html;
+    if (navigator.clipboard && navigator.clipboard.write) {
+      var blob = new Blob([html], { type: 'text/html' });
+      var textBlob = new Blob([html], { type: 'text/plain' });
+      navigator.clipboard.write([
+        new ClipboardItem({ 'text/html': blob, 'text/plain': textBlob })
+      ]).then(function() { toast('HTML copied to clipboard.'); })
+        .catch(function() { fallbackCopy(html); });
+    } else {
+      fallbackCopy(html);
+    }
+  });
+
+  function fallbackCopy(text) {
+    var ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.left = '-9999px';
+    document.body.appendChild(ta);
+    ta.select();
+    try { document.execCommand('copy'); toast('Copied to clipboard.'); }
+    catch(e) { toast('Copy failed. Use Ctrl+C.'); }
+    document.body.removeChild(ta);
+  }
+
+  $('exportCsvBtn').addEventListener('click', function() {
+    if (appState.outcomes.length === 0) { toast('No outcomes to export.'); return; }
+    var csv = generateCsv();
+    $('exportPreview').textContent = csv;
+    downloadBlob(csv, 'sof-table.csv', 'text/csv');
+    toast('CSV downloaded.');
+  });
+
+  $('exportJsonBtn').addEventListener('click', function() {
+    if (appState.outcomes.length === 0) { toast('No outcomes to export.'); return; }
+    var json = generateJson();
+    $('exportPreview').textContent = json;
+    downloadBlob(json, 'sof-table.json', 'application/json');
+    toast('JSON downloaded.');
+  });
+
+  $('printBtn').addEventListener('click', function() {
+    if (appState.outcomes.length === 0) { toast('No outcomes to print.'); return; }
+    // Switch to SoF tab and trigger print
+    activateTab($('tab-sof'));
+    setTimeout(function() { window.print(); }, 300);
+  });
+
+  $('exportMaifBtn').addEventListener('click', function() {
+    if (appState.outcomes.length === 0) { toast('No outcomes to export.'); return; }
+    var maif = generateMaif();
+    $('exportPreview').textContent = maif;
+    downloadBlob(maif, 'sof-maif-results.md', 'text/markdown');
+    toast('MAIF exported.');
+  });
+
+  function downloadBlob(content, filename, mime) {
+    var blob = new Blob([content], { type: mime });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  /* ============================================================
+     INITIALIZATION
+     ============================================================ */
+  loadState();
+  $('reviewTitle').value = appState.reviewTitle || '';
+  $('studyDesign').value = appState.studyDesign || 'RCT';
+  renderOutcomeList();
+
+})();
+</script>
+</body>
+</html>

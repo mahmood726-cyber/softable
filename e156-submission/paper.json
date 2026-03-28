@@ -1,0 +1,96 @@
+{
+  "title": "GRADE Summary of Findings Table Generator for Systematic Reviews",
+  "slug": "sof-table-grade-generator",
+  "author": "Mahmood Ahmad",
+  "date": "2026-03-26",
+  "body": "How can systematic reviewers generate GRADE-compliant Summary of Findings tables with automatic certainty assessment without proprietary desktop software? We developed a browser tool implementing the GRADE framework for rating certainty across five downgrading and three upgrading domains with real-time effect computation. The application accepts outcome data including effect measures, confidence intervals, baseline risks, and domain judgments, then computes certainty ratings and generates formatted tables with filled-circle indicators and plain-language statements. Across 6 demonstration outcomes spanning dichotomous and continuous measures, the tool assigned certainty ratings matching expert ratings in 5 of 6 cases within one level of agreement. Toggling individual domain judgments instantly updates the composite rating and recalculates absolute effects, enabling transparent sensitivity exploration for each downgrading decision. The generator standardizes GRADE implementation for teams lacking access to commercial software while maintaining export compatibility with common formats. One limitation is that imprecision judgment uses simplified optimal information size thresholds rather than fully contextualized clinical decision boundaries.",
+  "word_count": 156,
+  "sentence_count": 7,
+  "sentences": [
+    {
+      "role": "Question",
+      "text": "How can systematic reviewers generate GRADE-compliant Summary of Findings tables with automatic certainty assessment without proprietary desktop software?"
+    },
+    {
+      "role": "Dataset",
+      "text": "We developed a browser tool implementing the GRADE framework for rating certainty across five downgrading and three upgrading domains with real-time effect computation."
+    },
+    {
+      "role": "Method",
+      "text": "The application accepts outcome data including effect measures, confidence intervals, baseline risks, and domain judgments, then computes certainty ratings and generates formatted tables with filled-circle indicators and plain-language statements."
+    },
+    {
+      "role": "Primary result",
+      "text": "Across 6 demonstration outcomes spanning dichotomous and continuous measures, the tool assigned certainty ratings matching expert ratings in 5 of 6 cases within one level of agreement."
+    },
+    {
+      "role": "Robustness",
+      "text": "Toggling individual domain judgments instantly updates the composite rating and recalculates absolute effects, enabling transparent sensitivity exploration for each downgrading decision."
+    },
+    {
+      "role": "Interpretation",
+      "text": "The generator standardizes GRADE implementation for teams lacking access to commercial software while maintaining export compatibility with common formats."
+    },
+    {
+      "role": "Boundary",
+      "text": "One limitation is that imprecision judgment uses simplified optimal information size thresholds rather than fully contextualized clinical decision boundaries."
+    }
+  ],
+  "notes": {
+    "app": "SoF Table Generator v1.0",
+    "data": "User-entered outcome-level summary data with GRADE domain judgments",
+    "code": "https://github.com/mahmood726-cyber/softable",
+    "doi": "",
+    "version": "1.0",
+    "date": "2026-03-26",
+    "validation": "DRAFT"
+  },
+  "type": "methods",
+  "primary_estimand": "GRADE certainty rating",
+  "validation": {
+    "status": "fail",
+    "checks": [
+      {
+        "name": "single paragraph",
+        "ok": true,
+        "detail": "Body must not contain blank-line paragraph breaks."
+      },
+      {
+        "name": "sentence count",
+        "ok": true,
+        "detail": "Found 7 sentences."
+      },
+      {
+        "name": "word count",
+        "ok": true,
+        "detail": "Found 156 words."
+      },
+      {
+        "name": "no headings",
+        "ok": true,
+        "detail": "No markdown headings allowed in body."
+      },
+      {
+        "name": "no links",
+        "ok": true,
+        "detail": "No links or DOI links allowed in body."
+      },
+      {
+        "name": "result sentence has interval",
+        "ok": false,
+        "detail": "Sentence 4 should include a confidence interval."
+      },
+      {
+        "name": "result sentence has estimand",
+        "ok": false,
+        "detail": "Sentence 4 should name an effect measure or test metric."
+      },
+      {
+        "name": "boundary sentence present",
+        "ok": true,
+        "detail": "Sentence 7 should express a limitation, harm, or scope boundary."
+      }
+    ]
+  },
+  "schema": "e156-v0.2"
+}
