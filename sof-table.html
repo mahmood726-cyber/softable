@@ -1298,6 +1298,16 @@
     return html;
   }
 
+  /* CSV formula injection guard: prepend ' to cells starting with =+@\t\r (NOT -) */
+  function csvSafe(val) {
+    var s = String(val == null ? '' : val);
+    if (/^[=+@\t\r]/.test(s)) s = "'" + s;
+    if (s.indexOf(',') >= 0 || s.indexOf('"') >= 0 || s.indexOf('\n') >= 0) {
+      return '"' + s.replace(/"/g, '""') + '"';
+    }
+    return s;
+  }
+
   function generateCsv() {
     var rows = [['Outcome', 'Timeframe', 'Effect Type', 'Estimate', 'CI Low', 'CI High',
       'Control Risk per 1000', 'Absolute Difference per 1000', 'k', 'N',
@@ -1317,13 +1327,7 @@
     }
 
     return rows.map(function(r) {
-      return r.map(function(cell) {
-        var s = String(cell == null ? '' : cell);
-        if (s.indexOf(',') >= 0 || s.indexOf('"') >= 0 || s.indexOf('\n') >= 0) {
-          return '"' + s.replace(/"/g, '""') + '"';
-        }
-        return s;
-      }).join(',');
+      return r.map(function(cell) { return csvSafe(cell); }).join(',');
     }).join('\n');
   }
 
